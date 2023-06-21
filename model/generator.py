@@ -16,8 +16,9 @@ class Upsampler(nn.Module):
         in_channels = hp.audio.latents_hop_length
         out_channels = hp.audio.n_mel_channels
         middle_channels = 4 * out_channels
-        kernel_size =  2
+        kernel_size =  4
         stride = 2
+        padding = 1
         bias = False
         
         # building deconvs
@@ -25,12 +26,14 @@ class Upsampler(nn.Module):
                                                   out_channels=middle_channels,
                                                   kernel_size=kernel_size,
                                                   stride=stride,
+                                                  padding=padding,
                                                   bias=bias)
         
         self.__deconv1d_lvl2 = nn.ConvTranspose1d(in_channels=middle_channels,
                                                   out_channels=out_channels,
                                                   kernel_size=kernel_size,
                                                   stride=stride,
+                                                  padding=padding,
                                                   bias=bias)
     
     def __code_to_emb(self, code: torch) -> torch:
