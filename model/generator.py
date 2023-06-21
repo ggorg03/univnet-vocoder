@@ -15,12 +15,25 @@ class Upsampler(nn.Module):
         # setting deconvs params
         in_channels = hp.audio.latents_hop_length
         out_channels = hp.audio.n_mel_channels
-        middle_channels = 4 * out_channels
-        kernel_size =  4
+        middle_channels = in_channels // 2
         stride = 2
-        padding = 1
+        padding = stride // 2
+        kernel_size = stride + 2*padding
         bias = False
-        
+        ''' finding formule to kernel_size
+        The formule to find out_size of deconv1d is:
+           out_size = (in_size - 1) * stride + kernel - 2*padding
+        We know that: the out_size is equals to 2*in_size
+                      padding is equals to stride/2, so [2 / 2 = 1]
+                      stride is equals to 2
+        lets calculate
+                                  2*in_size = (in_size - 1) * stride + kernel - 2*padding
+                                  2*in_size = stride*in_size - stride + kernel - 2*padding
+        2*in_size - stride*in_size - kernel = -stride - 2*padding
+           2*in_size - (2)*in_size - kernel = -stride - 2*padding       [stride = 2]
+                                 0 - kernel = -stride - 2*padding
+                                     kernel = stride + 2*padding
+        '''
         # building deconvs
         self.__deconv1d_lvl1 = nn.ConvTranspose1d(in_channels=in_channels,
                                                   out_channels=middle_channels,
@@ -35,11 +48,16 @@ class Upsampler(nn.Module):
                                                   stride=stride,
                                                   padding=padding,
                                                   bias=bias)
+        
+        self.__emb_layer = torch.nn.Embedding(8194, self.__hp.audio.latents_hop_length) # generating embedder
     
     def __code_to_emb(self, code: torch) -> torch:
-        emb_layer = torch.nn.Embedding(8194, self.__hp.audio.latents_hop_length) # generating embedder
-        emb = emb_layer(code.int()).squeeze(0) # code(1, 1, T) --> emb (1, T, L)
-        return emb
+        emb = self.__emb_layer(code.int()) # code(... , 1, T) --> emb (... , T, L)
+        # trainnig
+        if len(emb.shape) > 3:
+            return emb.squeeze(1)
+        # validation
+        return emb.squeeze(0)
     
     def __upsampling(self, emb: torch) -> torch:
         emb = self.__deconv1d_lvl1(emb) # emb (1, LATENTS_HOP_LENGTH, T) -> emb (1, M, T*2)
@@ -48,10 +66,10 @@ class Upsampler(nn.Module):
 
     def forward(self, code: torch) -> torch:
         emb = self.__code_to_emb(code)
-        # prepering data to upsample
-        emb = emb.reshape(1, emb.shape[2], emb.shape[1]) # emb (1, T, L) --> emb (1, L, T)
+        # prepering embedding to upsample
+        emb = emb.transpose(2,1) # emb (1, T, L) --> emb (1, L, T)
         upsampled_emb = self.__upsampling(emb)
-
+        
         return upsampled_emb
 
 
