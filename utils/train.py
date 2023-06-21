@@ -28,6 +28,7 @@ def train(rank, args, chkpt_path, hp, hp_str):
                            world_size=hp.dist_config.world_size * args.num_gpus, rank=rank)
 
     torch.cuda.manual_seed(hp.train.seed)
+    # device = torch.device('cuda:{:d}'.format(rank)) if args.num_gpus >= 1 else torch.device('cpu')
     device = torch.device('cuda:{:d}'.format(rank))
 
     model_g = Generator(hp).to(device)
