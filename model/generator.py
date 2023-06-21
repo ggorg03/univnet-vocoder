@@ -8,13 +8,48 @@ MAX_WAV_VALUE = 32768.0
 
 
 class Upsampler(nn.Module):
+    
     def __init__(self, hp):
         super(Upsampler, self).__init__()
+        self.__hp = hp
+        # setting deconvs params
+        in_channels = hp.audio.latents_hop_length
+        out_channels = hp.audio.n_mel_channels
+        middle_channels = 4 * out_channels
+        kernel_size =  2
+        stride = 2
+        bias = False
+        
+        # building deconvs
+        self.__deconv1d_lvl1 = nn.ConvTranspose1d(in_channels=in_channels,
+                                                  out_channels=middle_channels,
+                                                  kernel_size=kernel_size,
+                                                  stride=stride,
+                                                  bias=bias)
+        
+        self.__deconv1d_lvl2 = nn.ConvTranspose1d(in_channels=middle_channels,
+                                                  out_channels=out_channels,
+                                                  kernel_size=kernel_size,
+                                                  stride=stride,
+                                                  bias=bias)
+    
+    def __code_to_emb(self, code: torch) -> torch:
+        emb_layer = torch.nn.Embedding(8194, self.__hp.audio.latents_hop_length) # generating embedder
+        emb = emb_layer(code.int()).squeeze(0) # code(1, 1, T) --> emb (1, T, L)
+        return emb
+    
+    def __upsampling(self, emb: torch) -> torch:
+        emb = self.__deconv1d_lvl1(emb) # emb (1, LATENTS_HOP_LENGTH, T) -> emb (1, M, T*2)
+        emb = self.__deconv1d_lvl2(emb) # emb (1, M, T*2) -> emb (1, N_MEL_CHANNELS, (T*2)*2)
+        return emb
 
+    def forward(self, code: torch) -> torch:
+        emb = self.__code_to_emb(code)
+        # prepering data to upsample
+        emb = emb.reshape(1, emb.shape[2], emb.shape[1]) # emb (1, T, L) --> emb (1, L, T)
+        upsampled_emb = self.__upsampling(emb)
 
-    def forward(self, x):
-
-        return x
+        return upsampled_emb
 
 
 class Generator(nn.Module):
