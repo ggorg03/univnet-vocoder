@@ -35,14 +35,14 @@ class Upsampler(nn.Module):
                                      kernel = stride + 2*padding
         '''
         # building deconvs
-        self.__deconv1d_lvl1 = nn.ConvTranspose1d(in_channels=in_channels,
+        self.__deconv1d_lv1 = nn.ConvTranspose1d(in_channels=in_channels,
                                                   out_channels=middle_channels,
                                                   kernel_size=kernel_size,
                                                   stride=stride,
                                                   padding=padding,
                                                   bias=bias)
         
-        self.__deconv1d_lvl2 = nn.ConvTranspose1d(in_channels=middle_channels,
+        self.__deconv1d_lv2 = nn.ConvTranspose1d(in_channels=middle_channels,
                                                   out_channels=out_channels,
                                                   kernel_size=kernel_size,
                                                   stride=stride,
@@ -60,8 +60,8 @@ class Upsampler(nn.Module):
         return emb.squeeze(0)
     
     def __upsampling(self, emb: torch) -> torch:
-        emb = self.__deconv1d_lvl1(emb) # emb (1, LATENTS_HOP_LENGTH, T) -> emb (1, M, T*2)
-        emb = self.__deconv1d_lvl2(emb) # emb (1, M, T*2) -> emb (1, N_MEL_CHANNELS, (T*2)*2)
+        emb = self.__deconv1d_lv1(emb) # emb (1, LATENTS_HOP_LENGTH, T) -> emb (1, M, T*2)
+        emb = self.__deconv1d_lv2(emb) # emb (1, M, T*2) -> emb (1, N_MEL_CHANNELS, (T*2)*2)
         return emb
 
     def forward(self, code: torch) -> torch:
