@@ -13,13 +13,15 @@ from utils.stft import TacotronSTFT
 
 
 def main(args):
-    checkpoint = torch.load(args.checkpoint_path)
+    num_gpus = torch.cuda.device_count()
+    checkpoint = torch.load(args.checkpoint_path, map_location=f"{'cuda' if num_gpus else 'cpu'}")
+    
     if args.config is not None:
         hp = OmegaConf.load(args.config)
     else:
         hp = OmegaConf.create(checkpoint['hp_str'])
 
-    model = Generator(hp).cuda()
+    model = Generator(hp).cuda() if num_gpus else Generator(hp).cpu()
     saved_state_dict = checkpoint['model_g']
     new_state_dict = {}
     
@@ -39,7 +41,7 @@ def main(args):
 
             if len(code.shape) == 1:
                 code = code.unsqueeze(0)
-            code = code.cuda()
+            code = code.cuda() if num_gpus else code.cpu()
 
             audio = model.inference(code)
             audio = audio.cpu().detach().numpy()
