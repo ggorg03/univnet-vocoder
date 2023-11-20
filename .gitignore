@@ -2,5 +2,7 @@
 __pycache__
 *.wav
 *.pth
-gustavo_model_0100
-gustavo_model_0100.pt
+chkpt/*
+makefile
+slurm-*
+*.sh
