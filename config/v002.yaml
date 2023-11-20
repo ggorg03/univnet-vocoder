@@ -6,7 +6,7 @@ data:
 #############################
 train:
   num_workers: 8
-  batch_size: 32
+  batch_size: 16 # 32 #! Changed to void error: "CUDA out of memory"
   optimizer: 'adam'
   seed: 1234
   adam:
@@ -17,15 +17,17 @@ train:
   spk_balanced: False # Using balanced sampling for each speaker
 #############################
 audio:
+  latents_dim: 1024
+  latents_hop_length: 1024
   n_mel_channels: 100
   segment_length: 16384 # Should be multiple of 256
   pad_short: 2000
   filter_length: 1024
   hop_length: 256 # WARNING: this can't be changed.
   win_length: 1024
-  sampling_rate: 24000
+  sampling_rate: 22050 # 24000
   mel_fmin: 0.0
-  mel_fmax: 12000.0
+  mel_fmax: 11025.0 # 12000.0
 #############################
 gen:
   noise_dim: 64
@@ -43,7 +45,8 @@ mpd:
   lReLU_slope: 0.2
 #############################
 mrd:
-  resolutions: "[(1024, 120, 600), (2048, 240, 1200), (512, 50, 240)]" # (filter_length, hop_length, win_length)
+  resolutions: "[(1024, 110, 550), (2048, 220, 1100), (512, 55, 220)]" # (filter_length, hop_length, win_length)
+  # resolutions: "[(1024, 120, 600), (2048, 240, 1200), (512, 50, 240)]" # old settings
   use_spectral_norm: False
   lReLU_slope: 0.2
 #############################
